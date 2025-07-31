@@ -28,7 +28,7 @@ Clone the repository
 bash
 Copy
 Edit
-git clone https://github.com/yourusername/store-management-system.git
+git clone https://github.com/Saurabhdoiphode/store-management-system.git
 Set up the MySQL database using the SQL scripts in the /database folder.
 
 Configure your database connection settings in the backend config files.
