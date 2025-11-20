@@ -509,11 +509,119 @@
             document.getElementById('cartModal').style.display = 'block';
         }
 
-        function verifyPayment() {
-            // Close QR modal first
-            closeQR();
-            // Then initiate payment with OTP
-            placeOrder('UPI');
+        async function verifyPayment() {
+            try {
+                const orderData = {
+                    items: cart,
+                    paymentMethod: 'UPI',
+                    total: cart.reduce((sum, item) => sum + (item.price * item.quantity), 0)
+                };
+                
+                const response = await fetch(`${API_BASE}/api/orders`, {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'Authorization': `Bearer ${token}`
+                    },
+                    body: JSON.stringify(orderData)
+                });
+                
+                if (!response.ok) throw new Error('Failed');
+                
+                const result = await response.json();
+                
+                // Close QR modal
+                closeQR();
+                
+                // Show thank you popup
+                showThankYouPopup(result.orderId);
+                
+                // Clear cart
+                cart = [];
+                updateCartUI();
+                loadProducts();
+                
+            } catch (error) {
+                alert('❌ Failed to place order. Please try again.');
+            }
+        }
+        
+        function showThankYouPopup(orderId) {
+            // Create overlay
+            const overlay = document.createElement('div');
+            overlay.style.cssText = `
+                position: fixed;
+                top: 0;
+                left: 0;
+                width: 100%;
+                height: 100%;
+                background: rgba(0, 0, 0, 0.8);
+                display: flex;
+                align-items: center;
+                justify-content: center;
+                z-index: 10000;
+                animation: fadeIn 0.3s ease;
+            `;
+            
+            // Create popup
+            const popup = document.createElement('div');
+            popup.style.cssText = `
+                background: white;
+                padding: 40px;
+                border-radius: 20px;
+                text-align: center;
+                max-width: 400px;
+                animation: slideIn 0.4s ease;
+                box-shadow: 0 20px 60px rgba(0, 0, 0, 0.3);
+            `;
+            
+            popup.innerHTML = `
+                <div style="font-size: 5rem; margin-bottom: 20px;">🎉</div>
+                <h2 style="color: #10b981; font-size: 2rem; margin-bottom: 15px;">Thank You!</h2>
+                <p style="color: #666; font-size: 1.1rem; margin-bottom: 10px;">Your order has been placed successfully</p>
+                <p style="color: #888; font-size: 0.9rem; margin-bottom: 25px;">Order ID: <strong>#${orderId.substring(0, 8)}</strong></p>
+                <button onclick="this.closest('div[style*=fixed]').remove()" 
+                    style="background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); 
+                           color: white; 
+                           border: none; 
+                           padding: 12px 40px; 
+                           border-radius: 25px; 
+                           font-size: 1rem; 
+                           font-weight: 600; 
+                           cursor: pointer;
+                           transition: transform 0.2s;">
+                    Close
+                </button>
+            `;
+            
+            overlay.appendChild(popup);
+            document.body.appendChild(overlay);
+            
+            // Auto close after 5 seconds
+            setTimeout(() => {
+                if (overlay.parentNode) {
+                    overlay.style.animation = 'fadeOut 0.3s ease';
+                    setTimeout(() => overlay.remove(), 300);
+                }
+            }, 5000);
+            
+            // Add animations
+            const style = document.createElement('style');
+            style.textContent = `
+                @keyframes fadeIn {
+                    from { opacity: 0; }
+                    to { opacity: 1; }
+                }
+                @keyframes fadeOut {
+                    from { opacity: 1; }
+                    to { opacity: 0; }
+                }
+                @keyframes slideIn {
+                    from { transform: translateY(-50px); opacity: 0; }
+                    to { transform: translateY(0); opacity: 1; }
+                }
+            `;
+            document.head.appendChild(style);
         }
 
         let currentPaymentData = {};
