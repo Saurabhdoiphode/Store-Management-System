@@ -1,0 +1,620 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Customer Dashboard</title>
+    <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
+    <style>
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        body {
+            font-family: 'Poppins', sans-serif;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+            padding: 20px;
+        }
+        .container { max-width: 1400px; margin: 0 auto; }
+        header {
+            background: white;
+            padding: 20px 30px;
+            border-radius: 20px;
+            margin-bottom: 30px;
+            box-shadow: 0 10px 30px rgba(0, 0, 0, 0.15);
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+        h1 { color: #6366f1; font-size: 2rem; }
+        .subtitle { color: #666; font-size: 0.9rem; }
+        .tab {
+            overflow: hidden;
+            background: white;
+            border-radius: 15px 15px 0 0;
+            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.05);
+        }
+        .tab button {
+            background: transparent;
+            border: none;
+            cursor: pointer;
+            padding: 20px 30px;
+            font-size: 1.1rem;
+            font-weight: 600;
+            color: #666;
+            transition: 0.3s;
+            border-bottom: 3px solid transparent;
+        }
+        .tab button:hover { color: #6366f1; }
+        .tab button.active {
+            color: #6366f1;
+            border-bottom-color: #6366f1;
+        }
+        .tabcontent {
+            display: none;
+            padding: 30px;
+            background: white;
+            border-radius: 0 0 15px 15px;
+            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.05);
+        }
+        .card {
+            background: white;
+            padding: 30px;
+            border-radius: 15px;
+            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.05);
+            margin-bottom: 20px;
+        }
+        .product-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(250px, 1fr));
+            gap: 20px;
+            margin-top: 20px;
+        }
+        .product-card {
+            background: white;
+            border-radius: 16px;
+            padding: 20px;
+            text-align: center;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+        }
+        .product-card:hover {
+            transform: translateY(-8px);
+            box-shadow: 0 12px 24px rgba(0, 0, 0, 0.15);
+        }
+        .product-icon { font-size: 4rem; margin-bottom: 10px; }
+        .product-price {
+            font-size: 1.5rem;
+            font-weight: bold;
+            color: #6366f1;
+            margin: 10px 0;
+        }
+        button {
+            padding: 12px 24px;
+            background: #6366f1;
+            color: white;
+            border: none;
+            border-radius: 8px;
+            cursor: pointer;
+            font-size: 1rem;
+            font-weight: 600;
+            transition: 0.3s;
+        }
+        button:hover {
+            background: #4f46e5;
+            transform: translateY(-2px);
+        }
+        .btn-danger { background: #ef4444; }
+        .btn-success { background: #10b981; }
+        #viewCartBtn {
+            position: fixed;
+            bottom: 30px;
+            right: 30px;
+            width: 70px;
+            height: 70px;
+            border-radius: 50%;
+            background: #6366f1;
+            color: white;
+            border: none;
+            font-size: 24px;
+            cursor: pointer;
+            box-shadow: 0 8px 20px rgba(99, 102, 241, 0.4);
+            z-index: 1000;
+        }
+        #cartCount {
+            position: absolute;
+            top: -5px;
+            right: -5px;
+            background: #ef4444;
+            color: white;
+            width: 28px;
+            height: 28px;
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 14px;
+            font-weight: bold;
+            border: 3px solid white;
+        }
+        .modal {
+            display: none;
+            position: fixed;
+            z-index: 1000;
+            left: 0;
+            top: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(0, 0, 0, 0.5);
+        }
+        .modal-content {
+            background: white;
+            margin: 5% auto;
+            padding: 30px;
+            border-radius: 20px;
+            max-width: 600px;
+            box-shadow: 0 20px 60px rgba(0, 0, 0, 0.3);
+        }
+        .close {
+            color: #aaa;
+            float: right;
+            font-size: 28px;
+            font-weight: bold;
+            cursor: pointer;
+        }
+        .close:hover { color: #000; }
+        .cart-item {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 15px;
+            background: #f5f6fa;
+            border-radius: 8px;
+            margin-bottom: 10px;
+        }
+        input, select {
+            width: 100%;
+            padding: 12px 15px;
+            border: 2px solid #e0e0e0;
+            border-radius: 10px;
+            font-size: 1rem;
+            margin-bottom: 15px;
+        }
+        table {
+            width: 100%;
+            border-collapse: collapse;
+            margin-top: 20px;
+        }
+        th, td {
+            padding: 15px;
+            text-align: left;
+            border-bottom: 1px solid #eee;
+        }
+        th {
+            background: #f5f6fa;
+            color: #333;
+            font-weight: 600;
+        }
+        .badge {
+            padding: 6px 12px;
+            border-radius: 20px;
+            font-size: 0.85rem;
+            font-weight: 600;
+        }
+        .badge-success { background: #10b981; color: white; }
+        .badge-warning { background: #f59e0b; color: white; }
+        .badge-danger { background: #ef4444; color: white; }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <header>
+            <div>
+                <h1>🛍️ Customer Dashboard</h1>
+                <p class="subtitle">Shop your favorite products</p>
+            </div>
+            <div style="text-align: right;">
+                <p><strong id="customerName">Loading...</strong></p>
+                <button onclick="logout()" class="btn-danger">🚪 Logout</button>
+            </div>
+        </header>
+
+        <div class="tab">
+            <button class="tablinks active" onclick="openTab(event, 'shopping')">🛍️ Shop</button>
+            <button class="tablinks" onclick="openTab(event, 'orders')">📦 My Orders</button>
+            <button class="tablinks" onclick="openTab(event, 'profile')">👤 Profile</button>
+        </div>
+
+        <div id="shopping" class="tabcontent" style="display: block;">
+            <div class="card">
+                <h2>🛒 Browse Products</h2>
+                <input type="text" id="searchInput" placeholder="🔍 Search products..." onkeyup="searchProducts()">
+                <div id="productsContainer" class="product-grid"></div>
+            </div>
+        </div>
+
+        <div id="orders" class="tabcontent">
+            <div class="card">
+                <h2>📦 My Orders</h2>
+                <button onclick="loadMyOrders()">🔄 Refresh</button>
+                <div id="ordersTable"></div>
+            </div>
+        </div>
+
+        <div id="profile" class="tabcontent">
+            <div class="card">
+                <h2>👤 My Profile</h2>
+                <div id="profileDetails"></div>
+            </div>
+        </div>
+    </div>
+
+    <button id="viewCartBtn" onclick="viewCart()">
+        🛒 
+        <span id="cartCount">0</span>
+    </button>
+
+    <div id="cartModal" class="modal">
+        <div class="modal-content">
+            <span class="close" onclick="closeCart()">&times;</span>
+            <h2>🛒 Shopping Cart</h2>
+            <div id="cartItems"></div>
+            <div style="text-align: right; font-size: 1.5rem; font-weight: bold; margin: 20px 0;">
+                Total: <span id="cartTotal">₹0.00</span>
+            </div>
+            <select id="paymentMethod">
+                <option value="Cash">💵 Cash</option>
+                <option value="Card">💳 Card</option>
+                <option value="UPI">📱 UPI</option>
+            </select>
+            <button onclick="checkout()" class="btn-success">💳 Place Order</button>
+        </div>
+    </div>
+
+    <div id="qrModal" class="modal">
+        <div class="modal-content">
+            <span class="close" onclick="closeQR()">&times;</span>
+            <h2>📱 Pay with UPI</h2>
+            <div style="background: white; padding: 20px; border-radius: 12px; text-align: center;">
+                <img id="shopQRCode" style="max-width: 250px; border-radius: 8px;" alt="QR Code">
+                <p style="margin-top: 15px; font-weight: bold; color: #6366f1;">SCAN & PAY</p>
+                <div id="shopUpiId" style="font-size: 1.2rem; margin: 10px 0;"></div>
+            </div>
+            <button onclick="verifyPayment()" class="btn-success">✅ I've Paid</button>
+            <button onclick="closeQR()" class="btn-danger">❌ Cancel</button>
+        </div>
+    </div>
+
+    <script>
+        const API_BASE = 'http://localhost:8000';
+        let token = localStorage.getItem('token');
+        let userId = localStorage.getItem('userId');
+        let userName = localStorage.getItem('userName');
+        let cart = [];
+        let allProducts = [];
+
+        if (!token || !userId) {
+            alert('Please login first!');
+            window.location.href = 'login.html';
+        }
+
+        if (localStorage.getItem('userRole') !== 'customer') {
+            alert('Access denied! This page is for customers only.');
+            window.location.href = 'login.html';
+        }
+
+        document.addEventListener('DOMContentLoaded', function() {
+            document.getElementById('customerName').textContent = userName;
+            loadProducts();
+            loadProfile();
+        });
+
+        function logout() {
+            if (confirm('Are you sure you want to logout?')) {
+                localStorage.clear();
+                window.location.href = 'login.html';
+            }
+        }
+
+        function openTab(evt, tabName) {
+            const tabcontent = document.getElementsByClassName("tabcontent");
+            for (let i = 0; i < tabcontent.length; i++) {
+                tabcontent[i].style.display = "none";
+            }
+            
+            const tablinks = document.getElementsByClassName("tablinks");
+            for (let i = 0; i < tablinks.length; i++) {
+                tablinks[i].className = tablinks[i].className.replace(" active", "");
+            }
+            
+            document.getElementById(tabName).style.display = "block";
+            evt.currentTarget.className += " active";
+
+            if (tabName === 'orders') loadMyOrders();
+            else if (tabName === 'profile') loadProfile();
+        }
+
+        async function loadProducts() {
+            try {
+                const response = await fetch(`${API_BASE}/api/products`, {
+                    headers: { 'Authorization': `Bearer ${token}` }
+                });
+                
+                if (!response.ok) throw new Error('Failed');
+                
+                allProducts = await response.json();
+                displayProducts(allProducts);
+            } catch (error) {
+                console.error('Error:', error);
+                document.getElementById('productsContainer').innerHTML = '<p style="color: red;">Failed to load products</p>';
+            }
+        }
+
+        function displayProducts(products) {
+            const container = document.getElementById('productsContainer');
+            
+            if (products.length === 0) {
+                container.innerHTML = '<p>No products available</p>';
+                return;
+            }
+            
+            let html = '';
+            const icons = {
+                'GROCERY': '🛒', 'OIL': '🛢️', 'SNACK': '🍿',
+                'DAIRY': '🥛', 'BEVERAGE': '🥤', 'HOUSEHOLD': '🏠'
+            };
+            
+            products.forEach(product => {
+                const stockStatus = product.stock > 10 ? 'In Stock' : product.stock > 0 ? 'Low Stock' : 'Out of Stock';
+                const badgeClass = product.stock > 10 ? 'badge-success' : product.stock > 0 ? 'badge-warning' : 'badge-danger';
+                
+                html += `
+                    <div class="product-card" onclick="addToCart('${product.id}', '${product.name}', ${product.price}, '${product.category}')">
+                        <div class="product-icon">${icons[product.category] || '📦'}</div>
+                        <h3>${product.name}</h3>
+                        <p>${product.category}</p>
+                        <p class="product-price">₹${product.price}</p>
+                        <span class="badge ${badgeClass}">${stockStatus}</span>
+                    </div>
+                `;
+            });
+            
+            container.innerHTML = html;
+        }
+
+        function searchProducts() {
+            const query = document.getElementById('searchInput').value.toLowerCase();
+            const filtered = allProducts.filter(p => 
+                p.name.toLowerCase().includes(query) || 
+                p.category.toLowerCase().includes(query)
+            );
+            displayProducts(filtered);
+        }
+
+        function addToCart(id, name, price, category) {
+            const quantity = parseFloat(prompt('Enter quantity:', '1'));
+            if (!quantity || quantity <= 0) return;
+            
+            const existingItem = cart.find(item => item.id === id);
+            
+            if (existingItem) {
+                existingItem.quantity += quantity;
+            } else {
+                cart.push({ id, name, price, quantity, category });
+            }
+            
+            updateCartUI();
+            alert(`✅ ${name} added to cart!`);
+        }
+
+        function updateCartUI() {
+            const count = cart.reduce((sum, item) => sum + item.quantity, 0);
+            document.getElementById('cartCount').textContent = count;
+        }
+
+        function viewCart() {
+            if (cart.length === 0) {
+                alert('Your cart is empty!');
+                return;
+            }
+            
+            displayCart();
+            document.getElementById('cartModal').style.display = 'block';
+        }
+
+        function displayCart() {
+            const container = document.getElementById('cartItems');
+            let total = 0;
+            let html = '';
+            
+            cart.forEach((item, index) => {
+                const itemTotal = item.price * item.quantity;
+                total += itemTotal;
+                
+                html += `
+                    <div class="cart-item">
+                        <div>
+                            <strong>${item.name}</strong><br>
+                            <small>₹${item.price} × ${item.quantity}</small>
+                        </div>
+                        <div>
+                            <strong>₹${itemTotal.toFixed(2)}</strong>
+                            <button onclick="removeFromCart(${index})" class="btn-danger" style="padding: 5px 10px; margin-left: 10px;">🗑️</button>
+                        </div>
+                    </div>
+                `;
+            });
+            
+            container.innerHTML = html;
+            document.getElementById('cartTotal').textContent = `₹${total.toFixed(2)}`;
+        }
+
+        function removeFromCart(index) {
+            cart.splice(index, 1);
+            updateCartUI();
+            displayCart();
+            
+            if (cart.length === 0) {
+                closeCart();
+            }
+        }
+
+        function closeCart() {
+            document.getElementById('cartModal').style.display = 'none';
+        }
+
+        async function checkout() {
+            if (cart.length === 0) return;
+            
+            const paymentMethod = document.getElementById('paymentMethod').value;
+            
+            if (paymentMethod === 'UPI') {
+                await loadShopQR();
+                document.getElementById('cartModal').style.display = 'none';
+                document.getElementById('qrModal').style.display = 'block';
+            } else {
+                await placeOrder(paymentMethod);
+            }
+        }
+
+        async function loadShopQR() {
+            try {
+                const response = await fetch(`${API_BASE}/api/shop/qr`, {
+                    headers: { 'Authorization': `Bearer ${token}` }
+                });
+                
+                if (!response.ok) throw new Error('Failed');
+                
+                const data = await response.json();
+                
+                if (data.qrCodeUrl) {
+                    document.getElementById('shopQRCode').src = data.qrCodeUrl;
+                }
+                if (data.upiId) {
+                    document.getElementById('shopUpiId').textContent = data.upiId;
+                }
+            } catch (error) {
+                alert('Failed to load QR code');
+            }
+        }
+
+        function closeQR() {
+            document.getElementById('qrModal').style.display = 'none';
+            document.getElementById('cartModal').style.display = 'block';
+        }
+
+        async function verifyPayment() {
+            await placeOrder('UPI');
+        }
+
+        async function placeOrder(paymentMethod) {
+            try {
+                const orderData = {
+                    items: cart,
+                    paymentMethod: paymentMethod,
+                    total: cart.reduce((sum, item) => sum + (item.price * item.quantity), 0)
+                };
+                
+                const response = await fetch(`${API_BASE}/api/orders`, {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'Authorization': `Bearer ${token}`
+                    },
+                    body: JSON.stringify(orderData)
+                });
+                
+                if (!response.ok) throw new Error('Failed');
+                
+                const result = await response.json();
+                
+                alert(`✅ Order placed successfully! Order ID: #${result.orderId.substring(0, 8)}`);
+                
+                cart = [];
+                updateCartUI();
+                closeCart();
+                closeQR();
+                loadProducts();
+            } catch (error) {
+                alert('❌ Failed to place order. Please try again.');
+            }
+        }
+
+        async function loadMyOrders() {
+            try {
+                const response = await fetch(`${API_BASE}/api/customer/orders`, {
+                    headers: { 'Authorization': `Bearer ${token}` }
+                });
+                
+                if (!response.ok) throw new Error('Failed');
+                
+                const orders = await response.json();
+                displayOrders(orders);
+            } catch (error) {
+                document.getElementById('ordersTable').innerHTML = '<p style="color: red;">Failed to load orders</p>';
+            }
+        }
+
+        function displayOrders(orders) {
+            const container = document.getElementById('ordersTable');
+            
+            if (orders.length === 0) {
+                container.innerHTML = '<p>You haven\'t placed any orders yet</p>';
+                return;
+            }
+            
+            let html = '<table><thead><tr><th>Order ID</th><th>Date</th><th>Items</th><th>Total</th><th>Payment</th><th>Status</th></tr></thead><tbody>';
+            
+            orders.forEach(order => {
+                html += `<tr>
+                    <td>#${order.id.substring(0, 8)}</td>
+                    <td>${new Date(order.date).toLocaleString()}</td>
+                    <td>${order.itemCount} items</td>
+                    <td>₹${order.total.toFixed(2)}</td>
+                    <td>${order.paymentMethod}</td>
+                    <td><span class="badge badge-success">${order.status}</span></td>
+                </tr>`;
+            });
+            
+            html += '</tbody></table>';
+            container.innerHTML = html;
+        }
+
+        async function loadProfile() {
+            try {
+                const response = await fetch(`${API_BASE}/api/customer/profile`, {
+                    headers: { 'Authorization': `Bearer ${token}` }
+                });
+                
+                if (!response.ok) throw new Error('Failed');
+                
+                const profile = await response.json();
+                displayProfile(profile);
+            } catch (error) {
+                document.getElementById('profileDetails').innerHTML = '<p style="color: red;">Failed to load profile</p>';
+            }
+        }
+
+        function displayProfile(profile) {
+            const container = document.getElementById('profileDetails');
+            
+            container.innerHTML = `
+                <div style="max-width: 600px; margin: 0 auto;">
+                    <div style="width: 120px; height: 120px; border-radius: 50%; background: #6366f1; color: white; display: flex; align-items: center; justify-content: center; font-size: 3rem; font-weight: bold; margin: 0 auto 20px; box-shadow: 0 8px 20px rgba(99, 102, 241, 0.3);">
+                        ${profile.firstName.charAt(0)}${profile.lastName.charAt(0)}
+                    </div>
+                    <h3 style="text-align: center;">${profile.firstName} ${profile.lastName}</h3>
+                    
+                    <div style="background: #f5f6fa; padding: 30px; border-radius: 16px; margin-top: 20px;">
+                        <p style="padding: 12px 0; border-bottom: 1px solid #ddd;"><strong>📧 Email:</strong> ${profile.email}</p>
+                        <p style="padding: 12px 0; border-bottom: 1px solid #ddd;"><strong>📱 Phone:</strong> ${profile.phone}</p>
+                        <p style="padding: 12px 0; border-bottom: 1px solid #ddd;"><strong>📍 Address:</strong> ${profile.address}, ${profile.city} - ${profile.pincode}</p>
+                        ${profile.dateOfBirth ? `<p style="padding: 12px 0; border-bottom: 1px solid #ddd;"><strong>🎂 Date of Birth:</strong> ${profile.dateOfBirth}</p>` : ''}
+                        <p style="padding: 12px 0; border-bottom: 1px solid #ddd;"><strong>📊 Total Orders:</strong> ${profile.totalOrders || 0}</p>
+                        <p style="padding: 12px 0;"><strong>💰 Total Spent:</strong> ₹${(profile.totalSpent || 0).toFixed(2)}</p>
+                    </div>
+                </div>
+            `;
+        }
+    </script>
+</body>
+</html>
