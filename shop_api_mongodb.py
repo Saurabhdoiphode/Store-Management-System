@@ -818,6 +818,14 @@ class StoreAPIHandler(BaseHTTPRequestHandler):
                 del customer['_id']
                 del customer['password']
                 
+                # Convert datetime fields to ISO format strings
+                if 'createdAt' in customer and customer['createdAt']:
+                    customer['createdAt'] = customer['createdAt'].isoformat()
+                if 'updatedAt' in customer and customer['updatedAt']:
+                    customer['updatedAt'] = customer['updatedAt'].isoformat()
+                if 'dateOfBirth' in customer and isinstance(customer.get('dateOfBirth'), datetime.datetime):
+                    customer['dateOfBirth'] = customer['dateOfBirth'].isoformat()
+                
                 self.send_json_response(customer)
             else:
                 self.send_json_response({'error': 'Profile not found'}, 404)
