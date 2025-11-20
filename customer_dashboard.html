@@ -537,15 +537,17 @@
                 
                 const result = await response.json();
                 
-                // Close QR modal
-                closeQR();
-                
-                // Show thank you popup
-                showThankYouPopup(result.orderId);
+                // Close QR modal immediately
+                document.getElementById('qrModal').style.display = 'none';
                 
                 // Clear cart
                 cart = [];
                 updateCartUI();
+                
+                // Show thank you popup
+                showThankYouPopup(result.orderId);
+                
+                // Reload products
                 loadProducts();
                 
             } catch (error) {
@@ -554,6 +556,10 @@
         }
         
         function showThankYouPopup(orderId) {
+            // Close all modals first
+            document.getElementById('cartModal').style.display = 'none';
+            document.getElementById('qrModal').style.display = 'none';
+            
             // Create overlay
             const overlay = document.createElement('div');
             overlay.style.cssText = `
@@ -567,7 +573,7 @@
                 align-items: center;
                 justify-content: center;
                 z-index: 10000;
-                animation: fadeIn 0.3s ease;
+                animation: fadeIn 0.2s ease;
             `;
             
             // Create popup
@@ -578,7 +584,7 @@
                 border-radius: 20px;
                 text-align: center;
                 max-width: 400px;
-                animation: slideIn 0.4s ease;
+                animation: slideIn 0.3s ease;
                 box-shadow: 0 20px 60px rgba(0, 0, 0, 0.3);
             `;
             
@@ -604,26 +610,27 @@
             overlay.appendChild(popup);
             document.body.appendChild(overlay);
             
-            // Auto close after 5 seconds
+            // Auto close after 2 seconds and redirect to shop
             setTimeout(() => {
                 if (overlay.parentNode) {
-                    overlay.style.animation = 'fadeOut 0.3s ease';
+                    overlay.style.animation = 'fadeOut 0.2s ease';
                     setTimeout(() => {
                         overlay.remove();
                         showSection('shop');
-                    }, 300);
+                    }, 200);
                 }
-            }, 5000);
+            }, 2000);
         }
         
         function closeThankYouPopup(button) {
             const overlay = button.closest('div[style*="fixed"]');
             if (overlay) {
-                overlay.style.animation = 'fadeOut 0.3s ease';
+                overlay.style.animation = 'fadeOut 0.2s ease';
                 setTimeout(() => {
                     overlay.remove();
+                    document.getElementById('cartModal').style.display = 'none';
                     showSection('shop');
-                }, 300);
+                }, 200);
             }
         }
 
@@ -828,15 +835,17 @@
                 
                 const result = await response.json();
                 
-                // Close cart modal
+                // Close cart modal immediately
                 document.getElementById('cartModal').style.display = 'none';
-                
-                // Show thank you popup
-                showThankYouPopup(result.orderId);
                 
                 // Clear cart
                 cart = [];
                 updateCartUI();
+                
+                // Show thank you popup
+                showThankYouPopup(result.orderId);
+                
+                // Reload products
                 loadProducts();
                 
             } catch (error) {
