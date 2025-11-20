@@ -263,7 +263,6 @@
             </div>
             <select id="paymentMethod">
                 <option value="Cash">💵 Cash</option>
-                <option value="Card">💳 Card</option>
                 <option value="UPI">📱 UPI</option>
             </select>
             <button onclick="checkout()" class="btn-success">💳 Place Order</button>
@@ -478,8 +477,8 @@
                 await loadShopQR();
                 document.getElementById('cartModal').style.display = 'none';
                 document.getElementById('qrModal').style.display = 'block';
-            } else {
-                await placeOrder(paymentMethod);
+            } else if (paymentMethod === 'Cash') {
+                await placeOrderDirect(paymentMethod);
             }
         }
 
@@ -489,18 +488,26 @@
                     headers: { 'Authorization': `Bearer ${token}` }
                 });
                 
-                if (!response.ok) throw new Error('Failed');
+                if (!response.ok) {
+                    console.error('QR API failed:', response.status);
+                    throw new Error('Failed to load QR');
+                }
                 
                 const data = await response.json();
+                console.log('QR Data received:', data);
                 
                 if (data.qrCodeUrl) {
                     document.getElementById('shopQRCode').src = data.qrCodeUrl;
+                } else {
+                    console.warn('No QR code URL in response');
                 }
+                
                 if (data.upiId) {
                     document.getElementById('shopUpiId').textContent = data.upiId;
                 }
             } catch (error) {
-                alert('Failed to load QR code');
+                console.error('QR loading error:', error);
+                alert('❌ Failed to load QR code. Please try again or use Cash payment.');
             }
         }
 
@@ -780,6 +787,44 @@
                 }, 3000);
                 
             } catch (error) {
+                alert('❌ Failed to place order. Please try again.');
+            }
+        }
+
+        async function placeOrderDirect(paymentMethod) {
+            try {
+                const orderData = {
+                    items: cart,
+                    paymentMethod: paymentMethod,
+                    total: cart.reduce((sum, item) => sum + (item.price * item.quantity), 0)
+                };
+                
+                const response = await fetch(`${API_BASE}/api/orders`, {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'Authorization': `Bearer ${token}`
+                    },
+                    body: JSON.stringify(orderData)
+                });
+                
+                if (!response.ok) throw new Error('Failed');
+                
+                const result = await response.json();
+                
+                // Close cart modal
+                document.getElementById('cartModal').style.display = 'none';
+                
+                // Show thank you popup
+                showThankYouPopup(result.orderId);
+                
+                // Clear cart
+                cart = [];
+                updateCartUI();
+                loadProducts();
+                
+            } catch (error) {
+                console.error('Order error:', error);
                 alert('❌ Failed to place order. Please try again.');
             }
         }
