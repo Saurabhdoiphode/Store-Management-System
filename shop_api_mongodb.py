@@ -1,5 +1,6 @@
 """
-Store Management System API with MongoDB and JWT Authentication
+Store Management System - Enterprise Level API
+MongoDB + JWT Authentication + Advanced Features
 """
 
 from http.server import HTTPServer, BaseHTTPRequestHandler
@@ -9,25 +10,56 @@ import jwt
 import datetime
 import hashlib
 import os
+import traceback
+import logging
+from typing import Optional, Dict, Any
+
+# Setup logging
+logging.basicConfig(
+    level=logging.INFO,
+    format='%(asctime)s - %(levelname)s - %(message)s'
+)
+logger = logging.getLogger(__name__)
 
 try:
-    from pymongo import MongoClient
+    from pymongo import MongoClient, ASCENDING, DESCENDING
     from bson.objectid import ObjectId
+    from bson.json_util import dumps
 except ImportError:
-    print("Installing required packages...")
+    logger.info("Installing required packages...")
     os.system('pip install pymongo pyjwt')
-    from pymongo import MongoClient
+    from pymongo import MongoClient, ASCENDING, DESCENDING
     from bson.objectid import ObjectId
+    from bson.json_util import dumps
 
 # MongoDB Connection
 MONGO_URI = "mongodb+srv://saurabhdoiphode1711_db_user:k4y74dzGWx24XgSv@cluster0.bengi2a.mongodb.net/?appName=Cluster0"
-client = MongoClient(MONGO_URI)
-db = client['store_management']
+
+try:
+    client = MongoClient(MONGO_URI, serverSelectionTimeoutMS=5000)
+    client.server_info()  # Test connection
+    db = client['store_management']
+    logger.info("✅ MongoDB Connected Successfully")
+except Exception as e:
+    logger.error(f"❌ MongoDB Connection Failed: {e}")
+    raise
 
 # Collections
 users_collection = db['users']
 products_collection = db['products']
 orders_collection = db['orders']
+analytics_collection = db['analytics']
+
+# Create indexes for better performance
+try:
+    users_collection.create_index([('email', ASCENDING)], unique=True)
+    products_collection.create_index([('name', ASCENDING)])
+    products_collection.create_index([('category', ASCENDING)])
+    orders_collection.create_index([('customerId', ASCENDING)])
+    orders_collection.create_index([('date', DESCENDING)])
+    logger.info("✅ Database indexes created")
+except Exception as e:
+    logger.warning(f"⚠️ Index creation warning: {e}")
 
 # JWT Secret Key
 JWT_SECRET = "your_super_secret_key_change_in_production_2024"
@@ -51,12 +83,21 @@ class StoreAPIHandler(BaseHTTPRequestHandler):
     
     def send_json_response(self, data, status=200):
         """Send JSON response with CORS headers"""
-        self.send_response(status)
-        self.send_header('Content-Type', 'application/json')
-        for key, value in CORS_HEADERS.items():
-            self.send_header(key, value)
-        self.end_headers()
-        self.wfile.write(json.dumps(data).encode())
+        try:
+            self.send_response(status)
+            self.send_header('Content-Type', 'application/json')
+            for key, value in CORS_HEADERS.items():
+                self.send_header(key, value)
+            self.end_headers()
+            self.wfile.write(json.dumps(data).encode())
+            
+            # Log request
+            if status >= 400:
+                logger.warning(f"{self.command} {self.path} - Status: {status}")
+            else:
+                logger.info(f"{self.command} {self.path} - Status: {status}")
+        except Exception as e:
+            logger.error(f"Error sending response: {e}")
     
     def get_auth_token(self):
         """Extract JWT token from Authorization header"""
@@ -258,128 +299,300 @@ class StoreAPIHandler(BaseHTTPRequestHandler):
     
     # Product endpoints
     def get_products(self):
-        """Get all products"""
+        """Get all products with enhanced error handling"""
         try:
-            products = list(products_collection.find())
-            for product in products:
-                product['id'] = str(product['_id'])
-                del product['_id']
+            logger.info("Fetching all products...")
             
-            self.send_json_response(products)
+            # Verify token (optional for products, but good for tracking)
+            user = self.verify_token()
+            
+            products = list(products_collection.find().sort('createdAt', DESCENDING))
+            
+            logger.info(f"Found {len(products)} products")
+            
+            result = []
+            for product in products:
+                result.append({
+                    'id': str(product['_id']),
+                    'name': product.get('name', ''),
+                    'category': product.get('category', ''),
+                    'price': float(product.get('price', 0)),
+                    'stock': float(product.get('stock', 0)),
+                    'shopkeeperId': product.get('shopkeeperId', ''),
+                    'createdAt': product.get('createdAt').isoformat() if product.get('createdAt') else None
+                })
+            
+            self.send_json_response(result)
+            
         except Exception as e:
-            print(f"Error getting products: {e}")
-            self.send_json_response({'error': 'Failed to get products'}, 500)
+            logger.error(f"Error getting products: {e}")
+            logger.error(traceback.format_exc())
+            self.send_json_response({
+                'error': 'Failed to get products',
+                'details': str(e)
+            }, 500)
     
     def add_product(self, data):
-        """Add new product"""
+        """Add new product with validation"""
         user = self.verify_token()
         if not user or user['role'] != 'shopkeeper':
+            logger.warning("Unauthorized product addition attempt")
             self.send_json_response({'error': 'Unauthorized'}, 401)
             return
         
         try:
+            # Validate required fields
+            required_fields = ['name', 'category', 'price', 'stock']
+            for field in required_fields:
+                if field not in data or not data[field]:
+                    self.send_json_response({
+                        'error': f'Missing required field: {field}'
+                    }, 400)
+                    return
+            
+            # Validate price and stock
+            try:
+                price = float(data['price'])
+                stock = float(data['stock'])
+                if price < 0 or stock < 0:
+                    raise ValueError("Negative values not allowed")
+            except ValueError as e:
+                self.send_json_response({
+                    'error': f'Invalid number format: {str(e)}'
+                }, 400)
+                return
+            
             product = {
-                'name': data['name'],
-                'category': data['category'],
-                'price': float(data['price']),
-                'stock': float(data['stock']),
+                'name': data['name'].strip(),
+                'category': data['category'].strip(),
+                'price': price,
+                'stock': stock,
                 'shopkeeperId': user['user_id'],
-                'createdAt': datetime.datetime.utcnow()
+                'createdAt': datetime.datetime.utcnow(),
+                'updatedAt': datetime.datetime.utcnow()
             }
             
-            result = products_collection.insert_one(product)
-            product['id'] = str(result.inserted_id)
-            del product['_id']
+            logger.info(f"Adding product: {product['name']} by user {user['user_id']}")
             
-            self.send_json_response(product, 201)
+            result = products_collection.insert_one(product)
+            
+            logger.info(f"✅ Product added successfully: {result.inserted_id}")
+            
+            # Return complete product info
+            response_product = {
+                'id': str(result.inserted_id),
+                'name': product['name'],
+                'category': product['category'],
+                'price': product['price'],
+                'stock': product['stock'],
+                'shopkeeperId': product['shopkeeperId'],
+                'createdAt': product['createdAt'].isoformat()
+            }
+            
+            self.send_json_response(response_product, 201)
+            
         except Exception as e:
-            print(f"Error adding product: {e}")
-            self.send_json_response({'error': 'Failed to add product'}, 500)
+            logger.error(f"Error adding product: {e}")
+            logger.error(traceback.format_exc())
+            self.send_json_response({
+                'error': 'Failed to add product',
+                'details': str(e)
+            }, 500)
     
     def update_product(self, product_id, data):
-        """Update product"""
+        """Update product with validation"""
         user = self.verify_token()
         if not user or user['role'] != 'shopkeeper':
             self.send_json_response({'error': 'Unauthorized'}, 401)
             return
         
         try:
-            update_data = {}
+            if not product_id or len(product_id) != 24:
+                self.send_json_response({'error': 'Invalid product ID'}, 400)
+                return
+            
+            update_data = {'updatedAt': datetime.datetime.utcnow()}
+            
             if 'price' in data:
-                update_data['price'] = float(data['price'])
+                try:
+                    price = float(data['price'])
+                    if price < 0:
+                        raise ValueError("Price cannot be negative")
+                    update_data['price'] = price
+                except ValueError as e:
+                    self.send_json_response({'error': str(e)}, 400)
+                    return
+            
             if 'stock' in data:
-                update_data['stock'] = float(data['stock'])
+                try:
+                    stock = float(data['stock'])
+                    if stock < 0:
+                        raise ValueError("Stock cannot be negative")
+                    update_data['stock'] = stock
+                except ValueError as e:
+                    self.send_json_response({'error': str(e)}, 400)
+                    return
+            
+            if 'name' in data:
+                update_data['name'] = data['name'].strip()
+            
+            if 'category' in data:
+                update_data['category'] = data['category'].strip()
+            
+            logger.info(f"Updating product {product_id} with data: {update_data}")
             
             result = products_collection.update_one(
                 {'_id': ObjectId(product_id)},
                 {'$set': update_data}
             )
             
-            if result.modified_count > 0:
-                self.send_json_response({'message': 'Product updated successfully'})
+            if result.matched_count > 0:
+                logger.info(f"✅ Product {product_id} updated successfully")
+                self.send_json_response({
+                    'message': 'Product updated successfully',
+                    'modified': result.modified_count > 0
+                })
             else:
+                logger.warning(f"Product {product_id} not found")
                 self.send_json_response({'error': 'Product not found'}, 404)
+                
         except Exception as e:
-            print(f"Error updating product: {e}")
-            self.send_json_response({'error': 'Failed to update product'}, 500)
+            logger.error(f"Error updating product: {e}")
+            logger.error(traceback.format_exc())
+            self.send_json_response({
+                'error': 'Failed to update product',
+                'details': str(e)
+            }, 500)
     
     def delete_product(self, product_id):
-        """Delete product"""
+        """Delete product with validation"""
         user = self.verify_token()
         if not user or user['role'] != 'shopkeeper':
             self.send_json_response({'error': 'Unauthorized'}, 401)
             return
         
         try:
+            if not product_id or len(product_id) != 24:
+                self.send_json_response({'error': 'Invalid product ID'}, 400)
+                return
+            
+            logger.info(f"Deleting product {product_id}")
+            
+            # Check if product exists first
+            product = products_collection.find_one({'_id': ObjectId(product_id)})
+            if not product:
+                logger.warning(f"Product {product_id} not found")
+                self.send_json_response({'error': 'Product not found'}, 404)
+                return
+            
             result = products_collection.delete_one({'_id': ObjectId(product_id)})
             
             if result.deleted_count > 0:
-                self.send_json_response({'message': 'Product deleted successfully'})
+                logger.info(f"✅ Product {product_id} deleted successfully")
+                self.send_json_response({
+                    'message': 'Product deleted successfully',
+                    'deletedProduct': product.get('name', 'Unknown')
+                })
             else:
-                self.send_json_response({'error': 'Product not found'}, 404)
+                self.send_json_response({'error': 'Failed to delete product'}, 500)
+                
         except Exception as e:
-            print(f"Error deleting product: {e}")
-            self.send_json_response({'error': 'Failed to delete product'}, 500)
+            logger.error(f"Error deleting product: {e}")
+            logger.error(traceback.format_exc())
+            self.send_json_response({
+                'error': 'Failed to delete product',
+                'details': str(e)
+            }, 500)
     
     # Order endpoints
     def place_order(self, data):
-        """Place an order"""
+        """Place an order with validation and stock management"""
         user = self.verify_token()
         if not user or user['role'] != 'customer':
             self.send_json_response({'error': 'Unauthorized'}, 401)
             return
         
         try:
+            # Validate order data
+            if 'items' not in data or not data['items']:
+                self.send_json_response({'error': 'Order must contain items'}, 400)
+                return
+            
+            if 'paymentMethod' not in data:
+                self.send_json_response({'error': 'Payment method required'}, 400)
+                return
+            
+            logger.info(f"Processing order for customer {user['user_id']}")
+            
+            # Validate stock availability
+            for item in data['items']:
+                product = products_collection.find_one({'_id': ObjectId(item['id'])})
+                if not product:
+                    self.send_json_response({
+                        'error': f"Product {item['name']} not found"
+                    }, 400)
+                    return
+                
+                if product['stock'] < item['quantity']:
+                    self.send_json_response({
+                        'error': f"Insufficient stock for {item['name']}. Available: {product['stock']}"
+                    }, 400)
+                    return
+            
+            # Calculate total
+            calculated_total = sum(item['price'] * item['quantity'] for item in data['items'])
+            
             order = {
                 'customerId': user['user_id'],
                 'items': data['items'],
-                'total': float(data['total']),
+                'total': calculated_total,
                 'paymentMethod': data['paymentMethod'],
                 'status': 'completed',
                 'date': datetime.datetime.utcnow()
             }
             
+            # Update stock for each item
             for item in data['items']:
-                products_collection.update_one(
+                result = products_collection.update_one(
                     {'_id': ObjectId(item['id'])},
-                    {'$inc': {'stock': -item['quantity']}}
+                    {
+                        '$inc': {'stock': -item['quantity']},
+                        '$set': {'updatedAt': datetime.datetime.utcnow()}
+                    }
                 )
+                logger.info(f"Updated stock for product {item['id']}: -{item['quantity']}")
             
+            # Update customer stats
             users_collection.update_one(
                 {'_id': ObjectId(user['user_id'])},
-                {'$inc': {'totalOrders': 1, 'totalSpent': order['total']}}
+                {
+                    '$inc': {
+                        'totalOrders': 1,
+                        'totalSpent': order['total']
+                    },
+                    '$set': {'updatedAt': datetime.datetime.utcnow()}
+                }
             )
             
+            # Insert order
             result = orders_collection.insert_one(order)
+            
+            logger.info(f"✅ Order {result.inserted_id} placed successfully")
             
             self.send_json_response({
                 'message': 'Order placed successfully',
-                'orderId': str(result.inserted_id)
+                'orderId': str(result.inserted_id),
+                'total': order['total'],
+                'itemCount': len(order['items'])
             }, 201)
             
         except Exception as e:
-            print(f"Error placing order: {e}")
-            self.send_json_response({'error': 'Failed to place order'}, 500)
+            logger.error(f"Error placing order: {e}")
+            logger.error(traceback.format_exc())
+            self.send_json_response({
+                'error': 'Failed to place order',
+                'details': str(e)
+            }, 500)
     
     def get_customer_orders(self):
         """Get customer's orders"""
@@ -429,35 +642,68 @@ class StoreAPIHandler(BaseHTTPRequestHandler):
     
     # Shopkeeper dashboard endpoints
     def get_shopkeeper_stats(self):
-        """Get shopkeeper dashboard statistics"""
+        """Get comprehensive shopkeeper dashboard statistics"""
         user = self.verify_token()
         if not user or user['role'] != 'shopkeeper':
             self.send_json_response({'error': 'Unauthorized'}, 401)
             return
         
         try:
-            today_start = datetime.datetime.utcnow().replace(hour=0, minute=0, second=0, microsecond=0)
-            today_sales = orders_collection.aggregate([
-                {'$match': {'date': {'$gte': today_start}}},
-                {'$group': {'_id': None, 'total': {'$sum': '$total'}}}
-            ])
-            today_sales = list(today_sales)
-            today_sales_amount = today_sales[0]['total'] if today_sales else 0
+            logger.info("Fetching shopkeeper stats...")
             
+            today_start = datetime.datetime.utcnow().replace(hour=0, minute=0, second=0, microsecond=0)
+            
+            # Today's sales
+            today_sales_pipeline = [
+                {'$match': {'date': {'$gte': today_start}}},
+                {'$group': {'_id': None, 'total': {'$sum': '$total'}, 'count': {'$sum': 1}}}
+            ]
+            today_sales = list(orders_collection.aggregate(today_sales_pipeline))
+            today_sales_amount = float(today_sales[0]['total']) if today_sales else 0.0
+            today_orders_count = today_sales[0]['count'] if today_sales else 0
+            
+            # Total products
             total_products = products_collection.count_documents({})
+            
+            # Low stock count
             low_stock_count = products_collection.count_documents({'stock': {'$lte': 10}})
+            
+            # Out of stock count
+            out_of_stock = products_collection.count_documents({'stock': 0})
+            
+            # Total customers
             total_customers = users_collection.count_documents({'role': 'customer'})
             
+            # Total orders
+            total_orders = orders_collection.count_documents({})
+            
+            # Total revenue
+            total_revenue_pipeline = [
+                {'$group': {'_id': None, 'total': {'$sum': '$total'}}}
+            ]
+            total_revenue = list(orders_collection.aggregate(total_revenue_pipeline))
+            total_revenue_amount = float(total_revenue[0]['total']) if total_revenue else 0.0
+            
+            logger.info(f"Stats fetched: Products={total_products}, Customers={total_customers}")
+            
             self.send_json_response({
-                'todaySales': today_sales_amount,
+                'todaySales': round(today_sales_amount, 2),
+                'todayOrders': today_orders_count,
                 'totalProducts': total_products,
                 'lowStockCount': low_stock_count,
-                'totalCustomers': total_customers
+                'outOfStock': out_of_stock,
+                'totalCustomers': total_customers,
+                'totalOrders': total_orders,
+                'totalRevenue': round(total_revenue_amount, 2)
             })
             
         except Exception as e:
-            print(f"Error getting stats: {e}")
-            self.send_json_response({'error': 'Failed to get stats'}, 500)
+            logger.error(f"Error getting stats: {e}")
+            logger.error(traceback.format_exc())
+            self.send_json_response({
+                'error': 'Failed to get stats',
+                'details': str(e)
+            }, 500)
     
     def get_shopkeeper_customers(self):
         """Get all customers"""
