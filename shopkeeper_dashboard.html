@@ -387,17 +387,31 @@
 
         async function loadProducts() {
             try {
+                console.log('📦 Loading products from API...');
+                console.log('Token:', token ? 'Present' : 'Missing');
+                console.log('API URL:', `${API_BASE}/api/products`);
+                
                 const response = await fetch(`${API_BASE}/api/products`, {
                     headers: { 'Authorization': `Bearer ${token}` }
                 });
                 
-                if (!response.ok) throw new Error('Failed to load products');
+                console.log('Response status:', response.status);
+                console.log('Response ok:', response.ok);
+                
+                if (!response.ok) {
+                    const errorData = await response.json();
+                    console.error('API Error:', errorData);
+                    throw new Error(errorData.error || 'Failed to load products');
+                }
                 
                 const products = await response.json();
+                console.log('✅ Products loaded:', products.length, 'products');
+                console.log('Products data:', products);
                 displayProducts(products);
             } catch (error) {
-                console.error('Error loading products:', error);
-                document.getElementById('productsTable').innerHTML = '<p style="color: red;">Failed to load products</p>';
+                console.error('❌ Error loading products:', error);
+                console.error('Error details:', error.message);
+                document.getElementById('productsTable').innerHTML = `<p style="color: red;">Failed to load products<br><small>${error.message}</small></p>`;
             }
         }
 
@@ -455,6 +469,8 @@
             }
             
             try {
+                console.log('➕ Adding product:', { name, category, price, stock });
+                
                 const response = await fetch(`${API_BASE}/api/products`, {
                     method: 'POST',
                     headers: {
@@ -464,15 +480,29 @@
                     body: JSON.stringify({ name, category, price, stock })
                 });
                 
-                if (!response.ok) throw new Error('Failed to add product');
+                console.log('Add product response status:', response.status);
+                
+                if (!response.ok) {
+                    const errorData = await response.json();
+                    console.error('Add product error:', errorData);
+                    throw new Error(errorData.error || 'Failed to add product');
+                }
+                
+                const result = await response.json();
+                console.log('✅ Product added:', result);
                 
                 alert('✅ Product added successfully!');
                 closeAddProduct();
-                loadProducts();
-                loadDashboardData();
+                
+                // Reload products and stats
+                console.log('🔄 Reloading products and dashboard stats...');
+                await loadProducts();
+                await loadDashboardData();
+                console.log('✅ Data reloaded successfully');
+                
             } catch (error) {
-                console.error('Error adding product:', error);
-                alert('❌ Failed to add product');
+                console.error('❌ Error adding product:', error);
+                alert('❌ Failed to add product: ' + error.message);
             }
         }
 
