@@ -255,12 +255,15 @@ class StoreAPIHandler(BaseHTTPRequestHandler):
             
             token = self.generate_token(user_id, user['email'], user['role'])
             
+            user_role = user['role']
+            logger.info(f"✅ New user registered: {user['email']} with role: {user_role}")
+            
             self.send_json_response({
                 'message': 'User registered successfully',
                 'token': token,
                 'userId': str(user_id),
                 'userName': f"{user['firstName']} {user['lastName']}",
-                'userRole': user['role']
+                'userRole': user_role
             }, 201)
             
         except Exception as e:
@@ -285,16 +288,20 @@ class StoreAPIHandler(BaseHTTPRequestHandler):
             
             token = self.generate_token(user['_id'], user['email'], user['role'])
             
+            user_role = user['role']
+            logger.info(f"✅ User logged in: {user['email']} with role: {user_role}")
+            
             self.send_json_response({
                 'message': 'Login successful',
                 'token': token,
                 'userId': str(user['_id']),
                 'userName': f"{user['firstName']} {user['lastName']}",
-                'userRole': user['role']
+                'userRole': user_role
             })
             
         except Exception as e:
-            print(f"Error logging in: {e}")
+            logger.error(f"Error logging in: {e}")
+            logger.error(traceback.format_exc())
             self.send_json_response({'error': 'Login failed'}, 500)
     
     # Product endpoints

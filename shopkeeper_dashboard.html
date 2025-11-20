@@ -326,8 +326,12 @@
             window.location.href = 'login.html';
         }
 
-        if (localStorage.getItem('userRole') !== 'shopkeeper') {
-            alert('Access denied! This page is for shopkeepers only.');
+        const userRole = localStorage.getItem('userRole');
+        console.log('Shopkeeper Dashboard - User Role:', userRole);
+        
+        if (!userRole || userRole.toLowerCase().trim() !== 'shopkeeper') {
+            alert('Access denied! This page is for shopkeepers only. Your role: ' + (userRole || 'undefined'));
+            localStorage.clear();
             window.location.href = 'login.html';
         }
 

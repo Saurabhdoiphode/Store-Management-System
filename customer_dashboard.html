@@ -297,8 +297,12 @@
             window.location.href = 'login.html';
         }
 
-        if (localStorage.getItem('userRole') !== 'customer') {
-            alert('Access denied! This page is for customers only.');
+        const userRole = localStorage.getItem('userRole');
+        console.log('Customer Dashboard - User Role:', userRole);
+        
+        if (!userRole || userRole.toLowerCase().trim() !== 'customer') {
+            alert('Access denied! This page is for customers only. Your role: ' + (userRole || 'undefined'));
+            localStorage.clear();
             window.location.href = 'login.html';
         }
 

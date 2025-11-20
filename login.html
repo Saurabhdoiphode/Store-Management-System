@@ -527,17 +527,24 @@
                     throw new Error(data.error || 'Registration failed');
                 }
                 
+                // Store user data
                 localStorage.setItem('token', data.token);
                 localStorage.setItem('userId', data.userId);
                 localStorage.setItem('userName', data.userName);
                 localStorage.setItem('userRole', data.userRole);
                 
+                console.log('Registration successful - User Role:', data.userRole);
+                console.log('Redirecting to:', data.userRole === 'shopkeeper' ? 'shopkeeper_dashboard.html' : 'customer_dashboard.html');
+                
                 alert('✅ Registration successful!');
                 
-                if (data.userRole === 'shopkeeper') {
+                // Redirect based on role with strict comparison
+                if (data.userRole && data.userRole.toLowerCase().trim() === 'shopkeeper') {
                     window.location.href = 'shopkeeper_dashboard.html';
-                } else {
+                } else if (data.userRole && data.userRole.toLowerCase().trim() === 'customer') {
                     window.location.href = 'customer_dashboard.html';
+                } else {
+                    throw new Error('Invalid user role');
                 }
                 
             } catch (error) {
@@ -566,17 +573,24 @@
                     throw new Error(data.error || 'Login failed');
                 }
                 
+                // Store user data
                 localStorage.setItem('token', data.token);
                 localStorage.setItem('userId', data.userId);
                 localStorage.setItem('userName', data.userName);
                 localStorage.setItem('userRole', data.userRole);
                 
+                console.log('Login successful - User Role:', data.userRole);
+                console.log('Redirecting to:', data.userRole === 'shopkeeper' ? 'shopkeeper_dashboard.html' : 'customer_dashboard.html');
+                
                 alert('✅ Login successful!');
                 
-                if (data.userRole === 'shopkeeper') {
+                // Redirect based on role with strict comparison
+                if (data.userRole && data.userRole.toLowerCase().trim() === 'shopkeeper') {
                     window.location.href = 'shopkeeper_dashboard.html';
-                } else {
+                } else if (data.userRole && data.userRole.toLowerCase().trim() === 'customer') {
                     window.location.href = 'customer_dashboard.html';
+                } else {
+                    throw new Error('Invalid user role');
                 }
                 
             } catch (error) {
