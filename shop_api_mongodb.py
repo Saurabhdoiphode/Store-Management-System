@@ -706,24 +706,44 @@ class StoreAPIHandler(BaseHTTPRequestHandler):
             }, 500)
     
     def get_shopkeeper_customers(self):
-        """Get all customers"""
+        """Get all customers with enhanced logging"""
         user = self.verify_token()
         if not user or user['role'] != 'shopkeeper':
+            logger.warning("Unauthorized customer list access attempt")
             self.send_json_response({'error': 'Unauthorized'}, 401)
             return
         
         try:
-            customers = list(users_collection.find({'role': 'customer'}))
+            logger.info("Fetching all customers for shopkeeper dashboard")
+            customers = list(users_collection.find({'role': 'customer'}).sort('createdAt', DESCENDING))
             
+            result = []
             for customer in customers:
-                customer['id'] = str(customer['_id'])
-                del customer['_id']
-                del customer['password']
+                result.append({
+                    'id': str(customer['_id']),
+                    'firstName': customer.get('firstName', ''),
+                    'lastName': customer.get('lastName', ''),
+                    'email': customer.get('email', ''),
+                    'phone': customer.get('phone', ''),
+                    'address': customer.get('address', ''),
+                    'city': customer.get('city', ''),
+                    'pincode': customer.get('pincode', ''),
+                    'dateOfBirth': customer.get('dateOfBirth', ''),
+                    'totalOrders': customer.get('totalOrders', 0),
+                    'totalSpent': float(customer.get('totalSpent', 0)),
+                    'createdAt': customer.get('createdAt').isoformat() if customer.get('createdAt') else None
+                })
             
-            self.send_json_response(customers)
+            logger.info(f"Found {len(result)} customers")
+            self.send_json_response(result)
+            
         except Exception as e:
-            print(f"Error getting customers: {e}")
-            self.send_json_response({'error': 'Failed to get customers'}, 500)
+            logger.error(f"Error getting customers: {e}")
+            logger.error(traceback.format_exc())
+            self.send_json_response({
+                'error': 'Failed to get customers',
+                'details': str(e)
+            }, 500)
     
     def get_shopkeeper_analytics(self):
         """Get analytics data"""
