@@ -907,11 +907,15 @@ class StoreAPIHandler(BaseHTTPRequestHandler):
             self.send_json_response({'error': 'Failed to update QR code'}, 500)
 
 
-def run_server(port=8000):
+def run_server(port=None):
     """Run the HTTP server"""
-    server_address = ('', port)
+    # Use environment variable PORT for deployment platforms like Render
+    if port is None:
+        port = int(os.environ.get('PORT', 8000))
+    
+    server_address = ('0.0.0.0', port)
     httpd = HTTPServer(server_address, StoreAPIHandler)
-    print(f'🚀 Server running on http://localhost:{port}')
+    print(f'🚀 Server running on port {port}')
     print(f'📊 MongoDB Connected')
     print(f'🔐 JWT Authentication enabled')
     print('\nPress Ctrl+C to stop the server\n')

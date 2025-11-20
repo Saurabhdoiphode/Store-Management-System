@@ -280,15 +280,21 @@
             </div>
 
             <div id="loginForm" class="form-content">
+                <div style="background: #e0f2fe; padding: 15px; border-radius: 10px; margin-bottom: 20px; border-left: 4px solid #0284c7;">
+                    <p style="margin: 0; color: #0c4a6e; font-weight: 500;">
+                        ℹ️ <strong>Note:</strong> Login with your registered email and password. 
+                        You will be automatically redirected to your dashboard based on your account type.
+                    </p>
+                </div>
                 <div class="error-message" id="loginError"></div>
                 <form onsubmit="login(event)">
                     <div class="form-group">
-                        <label for="loginEmail">Email</label>
-                        <input type="email" id="loginEmail" required>
+                        <label for="loginEmail">📧 Email</label>
+                        <input type="email" id="loginEmail" required placeholder="Enter your registered email">
                     </div>
                     <div class="form-group">
-                        <label for="loginPassword">Password</label>
-                        <input type="password" id="loginPassword" required>
+                        <label for="loginPassword">🔒 Password</label>
+                        <input type="password" id="loginPassword" required placeholder="Enter your password">
                     </div>
                     <button type="submit">🔓 Login</button>
                 </form>
@@ -395,7 +401,10 @@
     </div>
 
     <script>
-        const API_BASE = 'http://localhost:8000';
+        // Auto-detect environment (localhost or production)
+        const API_BASE = window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1'
+            ? 'http://localhost:8000'
+            : window.location.origin;
         let selectedRole = null;
 
         function selectRole(role) {
@@ -433,12 +442,18 @@
             document.querySelectorAll('.form-tab').forEach(t => t.classList.remove('active'));
             document.querySelectorAll('.form-content').forEach(c => c.classList.remove('active'));
             
+            const roleSelector = document.getElementById('roleSelector');
+            
             if (tab === 'login') {
                 document.getElementById('loginTab').classList.add('active');
                 document.getElementById('loginForm').classList.add('active');
+                // Hide role selector for login - role comes from database
+                roleSelector.style.display = 'none';
             } else {
                 document.getElementById('registerTab').classList.add('active');
                 document.getElementById('registerForm').classList.add('active');
+                // Show role selector for registration
+                roleSelector.style.display = 'grid';
             }
         }
 
@@ -580,9 +595,12 @@
                 localStorage.setItem('userRole', data.userRole);
                 
                 console.log('Login successful - User Role:', data.userRole);
+                console.log('User Details:', { userId: data.userId, userName: data.userName, role: data.userRole });
                 console.log('Redirecting to:', data.userRole === 'shopkeeper' ? 'shopkeeper_dashboard.html' : 'customer_dashboard.html');
                 
-                alert('✅ Login successful!');
+                // Show appropriate welcome message based on role
+                const roleName = data.userRole === 'shopkeeper' ? 'Shopkeeper' : 'Customer';
+                alert(`✅ Welcome ${data.userName}!\nLogged in as: ${roleName}\nRedirecting to your dashboard...`);
                 
                 // Redirect based on role with strict comparison
                 if (data.userRole && data.userRole.toLowerCase().trim() === 'shopkeeper') {
@@ -590,7 +608,7 @@
                 } else if (data.userRole && data.userRole.toLowerCase().trim() === 'customer') {
                     window.location.href = 'customer_dashboard.html';
                 } else {
-                    throw new Error('Invalid user role');
+                    throw new Error('Invalid user role: ' + data.userRole);
                 }
                 
             } catch (error) {

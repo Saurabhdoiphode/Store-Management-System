@@ -1,0 +1,13 @@
+services:
+  - type: web
+    name: store-management-system
+    env: python
+    buildCommand: pip install -r requirements.txt
+    startCommand: python shop_api_mongodb.py
+    envVars:
+      - key: MONGODB_URI
+        sync: false
+      - key: JWT_SECRET
+        generateValue: true
+      - key: PYTHON_VERSION
+        value: 3.11.0
