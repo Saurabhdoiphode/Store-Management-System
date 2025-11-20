@@ -509,8 +509,11 @@
             document.getElementById('cartModal').style.display = 'block';
         }
 
-        async function verifyPayment() {
-            await placeOrder('UPI');
+        function verifyPayment() {
+            // Close QR modal first
+            closeQR();
+            // Then initiate payment with OTP
+            placeOrder('UPI');
         }
 
         let currentPaymentData = {};
