@@ -137,24 +137,30 @@ class StoreAPIHandler(BaseHTTPRequestHandler):
         parsed_path = urlparse(self.path)
         path = parsed_path.path
         
-        if path == '/api/products':
-            self.get_products()
-        elif path == '/api/shopkeeper/stats':
-            self.get_shopkeeper_stats()
-        elif path == '/api/shopkeeper/orders':
-            self.get_shopkeeper_orders()
-        elif path == '/api/shopkeeper/customers':
-            self.get_shopkeeper_customers()
-        elif path == '/api/shopkeeper/analytics':
-            self.get_shopkeeper_analytics()
-        elif path == '/api/customer/orders':
-            self.get_customer_orders()
-        elif path == '/api/customer/profile':
-            self.get_customer_profile()
-        elif path == '/api/shop/qr':
-            self.get_shop_qr()
+        # Handle API routes
+        if path.startswith('/api/'):
+            if path == '/api/products':
+                self.get_products()
+            elif path == '/api/shopkeeper/stats':
+                self.get_shopkeeper_stats()
+            elif path == '/api/shopkeeper/orders':
+                self.get_shopkeeper_orders()
+            elif path == '/api/shopkeeper/customers':
+                self.get_shopkeeper_customers()
+            elif path == '/api/shopkeeper/analytics':
+                self.get_shopkeeper_analytics()
+            elif path == '/api/customer/orders':
+                self.get_customer_orders()
+            elif path == '/api/customer/profile':
+                self.get_customer_profile()
+            elif path == '/api/shop/qr':
+                self.get_shop_qr()
+            else:
+                logger.warning(f"API endpoint not found: {path}")
+                self.send_json_response({'error': 'API endpoint not found'}, 404)
         else:
-            self.send_json_response({'error': 'Not found'}, 404)
+            # Serve static files (HTML, CSS, JS, images)
+            self.serve_static_file(path)
     
     def do_POST(self):
         """Handle POST requests"""
@@ -880,6 +886,75 @@ class StoreAPIHandler(BaseHTTPRequestHandler):
                 'qrCodeUrl': qr_url,
                 'upiId': upi_id
             })
+    
+    def serve_static_file(self, path):
+        """Serve static HTML, CSS, JS, and image files"""
+        try:
+            # Default to login.html for root path
+            if path == '/' or path == '':
+                path = '/login.html'
+            
+            # Remove leading slash
+            file_path = path.lstrip('/')
+            
+            # Security: prevent directory traversal
+            if '..' in file_path:
+                self.send_json_response({'error': 'Invalid path'}, 400)
+                return
+            
+            # Check if file exists
+            if not os.path.exists(file_path):
+                logger.warning(f"File not found: {file_path}")
+                self.send_response(404)
+                self.send_header('Content-Type', 'text/html')
+                self.end_headers()
+                self.wfile.write(b'<h1>404 - File Not Found</h1><p>The requested file was not found on this server.</p>')
+                return
+            
+            # Determine content type
+            content_types = {
+                '.html': 'text/html',
+                '.css': 'text/css',
+                '.js': 'application/javascript',
+                '.json': 'application/json',
+                '.png': 'image/png',
+                '.jpg': 'image/jpeg',
+                '.jpeg': 'image/jpeg',
+                '.gif': 'image/gif',
+                '.svg': 'image/svg+xml',
+                '.ico': 'image/x-icon'
+            }
+            
+            ext = os.path.splitext(file_path)[1].lower()
+            content_type = content_types.get(ext, 'application/octet-stream')
+            
+            # Read and serve file
+            mode = 'rb' if content_type.startswith('image/') else 'r'
+            encoding = None if mode == 'rb' else 'utf-8'
+            
+            with open(file_path, mode, encoding=encoding) as f:
+                content = f.read()
+            
+            self.send_response(200)
+            self.send_header('Content-Type', content_type)
+            for key, value in CORS_HEADERS.items():
+                self.send_header(key, value)
+            self.end_headers()
+            
+            if isinstance(content, str):
+                self.wfile.write(content.encode('utf-8'))
+            else:
+                self.wfile.write(content)
+            
+            logger.info(f"Served static file: {file_path}")
+            
+        except Exception as e:
+            logger.error(f"Error serving static file {path}: {e}")
+            logger.error(traceback.format_exc())
+            self.send_response(500)
+            self.send_header('Content-Type', 'text/html')
+            self.end_headers()
+            self.wfile.write(b'<h1>500 - Internal Server Error</h1>')
     
     def update_shop_qr(self, data):
         """Update shop QR code"""
