@@ -1,0 +1,598 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Login - Store Management System</title>
+    <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Poppins', sans-serif;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            padding: 20px;
+        }
+
+        .container {
+            max-width: 900px;
+            width: 100%;
+        }
+
+        .auth-card {
+            background: white;
+            border-radius: 20px;
+            padding: 40px;
+            box-shadow: 0 20px 60px rgba(0, 0, 0, 0.3);
+        }
+
+        h1 {
+            text-align: center;
+            color: #6366f1;
+            margin-bottom: 10px;
+            font-size: 2.5rem;
+        }
+
+        .subtitle {
+            text-align: center;
+            color: #666;
+            margin-bottom: 30px;
+        }
+
+        .role-selector {
+            display: flex;
+            gap: 20px;
+            justify-content: center;
+            margin: 30px 0;
+        }
+
+        .role-card {
+            flex: 1;
+            max-width: 300px;
+            padding: 30px;
+            background: white;
+            border: 3px solid #e0e0e0;
+            border-radius: 20px;
+            text-align: center;
+            cursor: pointer;
+            transition: all 0.3s ease;
+        }
+
+        .role-card:hover {
+            border-color: #6366f1;
+            transform: translateY(-5px);
+            box-shadow: 0 8px 20px rgba(99, 102, 241, 0.3);
+        }
+
+        .role-card.active {
+            border-color: #6366f1;
+            background: linear-gradient(135deg, rgba(99, 102, 241, 0.1) 0%, rgba(139, 92, 246, 0.1) 100%);
+        }
+
+        .role-icon {
+            font-size: 4rem;
+            margin-bottom: 15px;
+        }
+
+        .role-card h3 {
+            color: #6366f1;
+            margin-bottom: 10px;
+        }
+
+        .role-card p {
+            color: #666;
+            font-size: 0.9rem;
+        }
+
+        .form-tabs {
+            display: flex;
+            gap: 10px;
+            margin-bottom: 30px;
+            border-bottom: 2px solid #e0e0e0;
+        }
+
+        .form-tab {
+            flex: 1;
+            padding: 15px;
+            background: transparent;
+            border: none;
+            border-bottom: 3px solid transparent;
+            cursor: pointer;
+            font-size: 1.1rem;
+            font-weight: 600;
+            color: #666;
+            transition: all 0.3s ease;
+        }
+
+        .form-tab.active {
+            color: #6366f1;
+            border-bottom-color: #6366f1;
+        }
+
+        .form-content {
+            display: none;
+        }
+
+        .form-content.active {
+            display: block;
+        }
+
+        .form-section {
+            margin-top: 20px;
+        }
+
+        .form-section h3 {
+            color: #6366f1;
+            margin-bottom: 15px;
+            padding-bottom: 10px;
+            border-bottom: 2px solid #e0e0e0;
+            font-size: 1.2rem;
+        }
+
+        .form-row {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+            gap: 15px;
+            margin-bottom: 15px;
+        }
+
+        .form-group {
+            margin-bottom: 20px;
+        }
+
+        label {
+            display: block;
+            margin-bottom: 8px;
+            color: #333;
+            font-weight: 500;
+        }
+
+        input[type="text"],
+        input[type="email"],
+        input[type="password"],
+        input[type="tel"],
+        input[type="date"],
+        select {
+            width: 100%;
+            padding: 12px 15px;
+            border: 2px solid #e0e0e0;
+            border-radius: 10px;
+            font-size: 1rem;
+            font-family: 'Poppins', sans-serif;
+            transition: all 0.3s ease;
+        }
+
+        input:focus,
+        select:focus {
+            outline: none;
+            border-color: #6366f1;
+            box-shadow: 0 0 0 3px rgba(99, 102, 241, 0.1);
+        }
+
+        .file-upload-label {
+            display: block;
+            padding: 20px;
+            background: #f5f6fa;
+            border: 2px dashed #e0e0e0;
+            border-radius: 12px;
+            text-align: center;
+            cursor: pointer;
+            transition: all 0.3s ease;
+        }
+
+        .file-upload-label:hover {
+            border-color: #6366f1;
+            background: rgba(99, 102, 241, 0.05);
+        }
+
+        input[type="file"] {
+            display: none;
+        }
+
+        .qr-preview {
+            margin-top: 15px;
+            text-align: center;
+        }
+
+        .qr-preview img {
+            max-width: 200px;
+            border-radius: 12px;
+            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+        }
+
+        button {
+            width: 100%;
+            padding: 15px;
+            background: linear-gradient(135deg, #6366f1 0%, #8b5cf6 100%);
+            color: white;
+            border: none;
+            border-radius: 10px;
+            font-size: 1.1rem;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            margin-top: 20px;
+        }
+
+        button:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 8px 20px rgba(99, 102, 241, 0.4);
+        }
+
+        .error-message {
+            color: #ef4444;
+            background: #fee;
+            padding: 10px 15px;
+            border-radius: 8px;
+            margin-bottom: 15px;
+            display: none;
+        }
+
+        .hidden {
+            display: none !important;
+        }
+
+        @media (max-width: 768px) {
+            .role-selector {
+                flex-direction: column;
+            }
+
+            .form-row {
+                grid-template-columns: 1fr;
+            }
+
+            h1 {
+                font-size: 2rem;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="auth-card">
+            <h1>🏪 Store Management</h1>
+            <p class="subtitle">Complete Store Management System with Authentication</p>
+
+            <div id="roleSelector" class="role-selector">
+                <div class="role-card" data-role="shopkeeper" onclick="selectRole('shopkeeper')">
+                    <div class="role-icon">👨‍💼</div>
+                    <h3>Shopkeeper</h3>
+                    <p>Manage your store, products, and orders</p>
+                </div>
+                <div class="role-card" data-role="customer" onclick="selectRole('customer')">
+                    <div class="role-icon">🛍️</div>
+                    <h3>Customer</h3>
+                    <p>Shop products and manage orders</p>
+                </div>
+            </div>
+
+            <div class="form-tabs">
+                <button class="form-tab" id="loginTab" onclick="switchTab('login')">Login</button>
+                <button class="form-tab active" id="registerTab" onclick="switchTab('register')">Register</button>
+            </div>
+
+            <div id="loginForm" class="form-content">
+                <div class="error-message" id="loginError"></div>
+                <form onsubmit="login(event)">
+                    <div class="form-group">
+                        <label for="loginEmail">Email</label>
+                        <input type="email" id="loginEmail" required>
+                    </div>
+                    <div class="form-group">
+                        <label for="loginPassword">Password</label>
+                        <input type="password" id="loginPassword" required>
+                    </div>
+                    <button type="submit">🔓 Login</button>
+                </form>
+            </div>
+
+            <div id="registerForm" class="form-content active">
+                <div class="error-message" id="registerError"></div>
+                <form onsubmit="register(event)">
+                    <div class="form-section">
+                        <h3>👤 Personal Information</h3>
+                        <div class="form-row">
+                            <div class="form-group">
+                                <label for="firstName">First Name *</label>
+                                <input type="text" id="firstName" required>
+                            </div>
+                            <div class="form-group">
+                                <label for="lastName">Last Name *</label>
+                                <input type="text" id="lastName" required>
+                            </div>
+                        </div>
+                        <div class="form-row">
+                            <div class="form-group">
+                                <label for="email">Email *</label>
+                                <input type="email" id="email" required>
+                            </div>
+                            <div class="form-group">
+                                <label for="phone">Phone Number *</label>
+                                <input type="tel" id="phone" required>
+                            </div>
+                        </div>
+                        <div class="form-row">
+                            <div class="form-group">
+                                <label for="password">Password *</label>
+                                <input type="password" id="password" required minlength="6">
+                            </div>
+                            <div class="form-group">
+                                <label for="confirmPassword">Confirm Password *</label>
+                                <input type="password" id="confirmPassword" required minlength="6">
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="form-section">
+                        <h3>📍 Address Information</h3>
+                        <div class="form-group">
+                            <label for="address">Address *</label>
+                            <input type="text" id="address" required>
+                        </div>
+                        <div class="form-row">
+                            <div class="form-group">
+                                <label for="city">City *</label>
+                                <input type="text" id="city" required>
+                            </div>
+                            <div class="form-group">
+                                <label for="pincode">Pincode *</label>
+                                <input type="text" id="pincode" required pattern="[0-9]{6}">
+                            </div>
+                        </div>
+                    </div>
+
+                    <div id="shopkeeperFields" class="form-section hidden">
+                        <h3>🏪 Shop Information</h3>
+                        <div class="form-row">
+                            <div class="form-group">
+                                <label for="shopName">Shop Name *</label>
+                                <input type="text" id="shopName">
+                            </div>
+                            <div class="form-group">
+                                <label for="gstNumber">GST Number</label>
+                                <input type="text" id="gstNumber">
+                            </div>
+                        </div>
+                        <div class="form-group">
+                            <label for="shopAddress">Shop Address *</label>
+                            <input type="text" id="shopAddress">
+                        </div>
+                        <div class="form-group">
+                            <label for="upiId">UPI ID *</label>
+                            <input type="text" id="upiId" placeholder="yourname@upi">
+                        </div>
+                        <div class="form-group">
+                            <label>QR Code for Payments *</label>
+                            <label for="qrCode" class="file-upload-label">
+                                📤 Click to upload QR Code image<br>
+                                <small>(Max 5MB, PNG/JPG)</small>
+                            </label>
+                            <input type="file" id="qrCode" accept="image/*" onchange="previewQR(event)">
+                            <div id="qrPreview" class="qr-preview"></div>
+                        </div>
+                    </div>
+
+                    <div id="customerFields" class="form-section hidden">
+                        <h3>📅 Additional Information</h3>
+                        <div class="form-group">
+                            <label for="dateOfBirth">Date of Birth</label>
+                            <input type="date" id="dateOfBirth">
+                        </div>
+                    </div>
+
+                    <button type="submit">✅ Register</button>
+                </form>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        const API_BASE = 'http://localhost:8000';
+        let selectedRole = null;
+
+        function selectRole(role) {
+            selectedRole = role;
+            
+            document.querySelectorAll('.role-card').forEach(card => {
+                card.classList.remove('active');
+            });
+            
+            document.querySelector(`[data-role="${role}"]`).classList.add('active');
+            
+            const shopkeeperFields = document.getElementById('shopkeeperFields');
+            const customerFields = document.getElementById('customerFields');
+            
+            if (role === 'shopkeeper') {
+                shopkeeperFields.classList.remove('hidden');
+                customerFields.classList.add('hidden');
+                
+                document.getElementById('shopName').required = true;
+                document.getElementById('shopAddress').required = true;
+                document.getElementById('upiId').required = true;
+                document.getElementById('qrCode').required = true;
+            } else if (role === 'customer') {
+                shopkeeperFields.classList.add('hidden');
+                customerFields.classList.remove('hidden');
+                
+                document.getElementById('shopName').required = false;
+                document.getElementById('shopAddress').required = false;
+                document.getElementById('upiId').required = false;
+                document.getElementById('qrCode').required = false;
+            }
+        }
+
+        function switchTab(tab) {
+            document.querySelectorAll('.form-tab').forEach(t => t.classList.remove('active'));
+            document.querySelectorAll('.form-content').forEach(c => c.classList.remove('active'));
+            
+            if (tab === 'login') {
+                document.getElementById('loginTab').classList.add('active');
+                document.getElementById('loginForm').classList.add('active');
+            } else {
+                document.getElementById('registerTab').classList.add('active');
+                document.getElementById('registerForm').classList.add('active');
+            }
+        }
+
+        function previewQR(event) {
+            const file = event.target.files[0];
+            if (file) {
+                if (file.size > 5 * 1024 * 1024) {
+                    alert('File size must be less than 5MB');
+                    event.target.value = '';
+                    return;
+                }
+                
+                const reader = new FileReader();
+                reader.onload = function(e) {
+                    document.getElementById('qrPreview').innerHTML = 
+                        `<img src="${e.target.result}" alt="QR Preview">`;
+                };
+                reader.readAsDataURL(file);
+            }
+        }
+
+        async function register(event) {
+            event.preventDefault();
+            
+            if (!selectedRole) {
+                showError('registerError', 'Please select a role (Shopkeeper or Customer)');
+                return;
+            }
+            
+            const password = document.getElementById('password').value;
+            const confirmPassword = document.getElementById('confirmPassword').value;
+            
+            if (password !== confirmPassword) {
+                showError('registerError', 'Passwords do not match');
+                return;
+            }
+            
+            const formData = {
+                role: selectedRole,
+                firstName: document.getElementById('firstName').value,
+                lastName: document.getElementById('lastName').value,
+                email: document.getElementById('email').value,
+                phone: document.getElementById('phone').value,
+                password: password,
+                address: document.getElementById('address').value,
+                city: document.getElementById('city').value,
+                pincode: document.getElementById('pincode').value
+            };
+            
+            if (selectedRole === 'shopkeeper') {
+                formData.shopName = document.getElementById('shopName').value;
+                formData.shopAddress = document.getElementById('shopAddress').value;
+                formData.gstNumber = document.getElementById('gstNumber').value || '';
+                formData.upiId = document.getElementById('upiId').value;
+                
+                const qrFile = document.getElementById('qrCode').files[0];
+                if (qrFile) {
+                    const reader = new FileReader();
+                    reader.onload = function(e) {
+                        formData.qrCodeUrl = e.target.result;
+                        submitRegistration(formData);
+                    };
+                    reader.readAsDataURL(qrFile);
+                    return;
+                }
+            } else if (selectedRole === 'customer') {
+                formData.dateOfBirth = document.getElementById('dateOfBirth').value || '';
+            }
+            
+            submitRegistration(formData);
+        }
+
+        async function submitRegistration(formData) {
+            try {
+                const response = await fetch(`${API_BASE}/api/auth/register`, {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json'
+                    },
+                    body: JSON.stringify(formData)
+                });
+                
+                const data = await response.json();
+                
+                if (!response.ok) {
+                    throw new Error(data.error || 'Registration failed');
+                }
+                
+                localStorage.setItem('token', data.token);
+                localStorage.setItem('userId', data.userId);
+                localStorage.setItem('userName', data.userName);
+                localStorage.setItem('userRole', data.userRole);
+                
+                alert('✅ Registration successful!');
+                
+                if (data.userRole === 'shopkeeper') {
+                    window.location.href = 'shopkeeper_dashboard.html';
+                } else {
+                    window.location.href = 'customer_dashboard.html';
+                }
+                
+            } catch (error) {
+                showError('registerError', error.message);
+            }
+        }
+
+        async function login(event) {
+            event.preventDefault();
+            
+            const email = document.getElementById('loginEmail').value;
+            const password = document.getElementById('loginPassword').value;
+            
+            try {
+                const response = await fetch(`${API_BASE}/api/auth/login`, {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json'
+                    },
+                    body: JSON.stringify({ email, password })
+                });
+                
+                const data = await response.json();
+                
+                if (!response.ok) {
+                    throw new Error(data.error || 'Login failed');
+                }
+                
+                localStorage.setItem('token', data.token);
+                localStorage.setItem('userId', data.userId);
+                localStorage.setItem('userName', data.userName);
+                localStorage.setItem('userRole', data.userRole);
+                
+                alert('✅ Login successful!');
+                
+                if (data.userRole === 'shopkeeper') {
+                    window.location.href = 'shopkeeper_dashboard.html';
+                } else {
+                    window.location.href = 'customer_dashboard.html';
+                }
+                
+            } catch (error) {
+                showError('loginError', error.message);
+            }
+        }
+
+        function showError(elementId, message) {
+            const errorElement = document.getElementById(elementId);
+            errorElement.textContent = message;
+            errorElement.style.display = 'block';
+            
+            setTimeout(() => {
+                errorElement.style.display = 'none';
+            }, 5000);
+        }
+    </script>
+</body>
+</html>
