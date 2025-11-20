@@ -567,7 +567,10 @@
             }
         }
 
+        let allOrders = []; // Store orders globally for detail view
+
         function displayOrders(orders) {
+            allOrders = orders; // Store for detail view
             const container = document.getElementById('ordersTable');
             
             if (orders.length === 0) {
@@ -575,9 +578,9 @@
                 return;
             }
             
-            let html = '<table><thead><tr><th>Order ID</th><th>Customer</th><th>Items</th><th>Total</th><th>Payment</th><th>Date</th><th>Status</th></tr></thead><tbody>';
+            let html = '<table><thead><tr><th>Order ID</th><th>Customer</th><th>Items</th><th>Total</th><th>Payment</th><th>Date</th><th>Status</th><th>Action</th></tr></thead><tbody>';
             
-            orders.forEach(order => {
+            orders.forEach((order, index) => {
                 html += `<tr>
                     <td>#${order.id.substring(0, 8)}</td>
                     <td>${order.customerName}</td>
@@ -586,11 +589,52 @@
                     <td>${order.paymentMethod}</td>
                     <td>${new Date(order.date).toLocaleString()}</td>
                     <td><span class="badge badge-success">${order.status}</span></td>
+                    <td><button onclick="viewOrderDetails(${index})" class="btn-view" style="padding: 5px 15px; font-size: 0.9rem;">👁️ View</button></td>
                 </tr>`;
             });
             
             html += '</tbody></table>';
             container.innerHTML = html;
+        }
+
+        function viewOrderDetails(orderIndex) {
+            const order = allOrders[orderIndex];
+            if (!order) return;
+            
+            // Populate modal with order details
+            document.getElementById('detailOrderId').textContent = `#${order.id}`;
+            document.getElementById('detailCustomer').textContent = order.customerName;
+            document.getElementById('detailDate').textContent = new Date(order.date).toLocaleString();
+            document.getElementById('detailPayment').textContent = order.paymentMethod;
+            document.getElementById('detailStatus').textContent = order.status;
+            document.getElementById('detailTotal').textContent = `₹${order.total.toFixed(2)}`;
+            
+            // Display items
+            let itemsHtml = '<table style="width: 100%; margin-top: 10px;"><thead><tr><th>Product</th><th>Price</th><th>Qty</th><th>Subtotal</th></tr></thead><tbody>';
+            
+            order.items.forEach(item => {
+                const subtotal = item.price * item.quantity;
+                itemsHtml += `<tr>
+                    <td><strong>${item.name}</strong><br><small style="color: #666;">${item.category}</small></td>
+                    <td>₹${item.price.toFixed(2)}</td>
+                    <td>${item.quantity}</td>
+                    <td>₹${subtotal.toFixed(2)}</td>
+                </tr>`;
+            });
+            
+            itemsHtml += '</tbody></table>';
+            document.getElementById('detailItems').innerHTML = itemsHtml;
+            
+            // Show modal
+            document.getElementById('orderDetailModal').style.display = 'block';
+        }
+
+        function closeOrderDetail() {
+            document.getElementById('orderDetailModal').style.display = 'none';
+        }
+
+        function printOrder() {
+            window.print();
         }
 
         async function loadCustomers() {
@@ -750,6 +794,125 @@
                 alert('❌ Failed to update QR code');
             }
         }
+
+        function viewOrderDetails(orderIndex) {
+            const order = allOrders[orderIndex];
+            if (!order) return;
+            
+            // Populate modal with order details
+            document.getElementById('detailOrderId').textContent = `#${order.id}`;
+            document.getElementById('detailCustomer').textContent = order.customerName;
+            document.getElementById('detailDate').textContent = new Date(order.date).toLocaleString();
+            document.getElementById('detailPayment').textContent = order.paymentMethod;
+            document.getElementById('detailStatus').textContent = order.status;
+            document.getElementById('detailTotal').textContent = `₹${order.total.toFixed(2)}`;
+            
+            // Display items
+            let itemsHtml = '<table style="width: 100%; margin-top: 10px;"><thead><tr><th>Product</th><th>Price</th><th>Qty</th><th>Subtotal</th></tr></thead><tbody>';
+            
+            order.items.forEach(item => {
+                const subtotal = item.price * item.quantity;
+                itemsHtml += `<tr>
+                    <td><strong>${item.name}</strong><br><small style="color: #666;">${item.category}</small></td>
+                    <td>₹${item.price.toFixed(2)}</td>
+                    <td>${item.quantity}</td>
+                    <td>₹${subtotal.toFixed(2)}</td>
+                </tr>`;
+            });
+            
+            itemsHtml += '</tbody></table>';
+            document.getElementById('detailItems').innerHTML = itemsHtml;
+            
+            // Show modal
+            document.getElementById('orderDetailModal').style.display = 'block';
+        }
+
+        function closeOrderDetail() {
+            document.getElementById('orderDetailModal').style.display = 'none';
+        }
+
+        function printOrder() {
+            window.print();
+        }
     </script>
+
+    <!-- Order Detail Modal -->
+    <div id="orderDetailModal" class="modal" style="display: none;">
+        <div class="modal-content" style="max-width: 700px;">
+            <span class="close" onclick="closeOrderDetail()">&times;</span>
+            <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px;">
+                <h2>📋 Order Details</h2>
+                <button onclick="printOrder()" class="btn-secondary" style="padding: 8px 20px;">
+                    🖨️ Print
+                </button>
+            </div>
+            
+            <div style="background: #f8f9fa; padding: 20px; border-radius: 10px; margin-bottom: 20px;">
+                <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 15px;">
+                    <div>
+                        <p style="color: #666; font-size: 0.9rem; margin-bottom: 5px;">Order ID</p>
+                        <p style="font-weight: 600; font-size: 1.1rem;" id="detailOrderId">#123456</p>
+                    </div>
+                    <div>
+                        <p style="color: #666; font-size: 0.9rem; margin-bottom: 5px;">Customer</p>
+                        <p style="font-weight: 600;" id="detailCustomer">John Doe</p>
+                    </div>
+                    <div>
+                        <p style="color: #666; font-size: 0.9rem; margin-bottom: 5px;">Order Date</p>
+                        <p style="font-weight: 600;" id="detailDate">2025-11-20</p>
+                    </div>
+                    <div>
+                        <p style="color: #666; font-size: 0.9rem; margin-bottom: 5px;">Payment Method</p>
+                        <p style="font-weight: 600;" id="detailPayment">UPI</p>
+                    </div>
+                    <div>
+                        <p style="color: #666; font-size: 0.9rem; margin-bottom: 5px;">Status</p>
+                        <p style="font-weight: 600;"><span class="badge badge-success" id="detailStatus">Completed</span></p>
+                    </div>
+                    <div>
+                        <p style="color: #666; font-size: 0.9rem; margin-bottom: 5px;">Total Amount</p>
+                        <p style="font-weight: 700; font-size: 1.3rem; color: #10b981;" id="detailTotal">₹0.00</p>
+                    </div>
+                </div>
+            </div>
+            
+            <div>
+                <h3 style="margin-bottom: 15px; color: #333;">📦 Items Ordered</h3>
+                <div id="detailItems" style="overflow-x: auto;">
+                    <!-- Items will be populated here -->
+                </div>
+            </div>
+            
+            <div style="margin-top: 20px; padding-top: 20px; border-top: 2px solid #e5e7eb; display: flex; justify-content: flex-end; gap: 10px;">
+                <button onclick="closeOrderDetail()" class="btn-secondary">Close</button>
+            </div>
+        </div>
+    </div>
+
+    <style>
+        .btn-view {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            border: none;
+            border-radius: 6px;
+            cursor: pointer;
+            font-weight: 600;
+            transition: all 0.3s;
+            padding: 5px 15px;
+            font-size: 0.9rem;
+        }
+        .btn-view:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 5px 15px rgba(102, 126, 234, 0.4);
+        }
+        @media print {
+            .modal {
+                position: static !important;
+            }
+            .close, button {
+                display: none !important;
+            }
+        }
+    </style>
 </body>
 </html>
