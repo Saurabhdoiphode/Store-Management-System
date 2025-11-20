@@ -614,6 +614,9 @@ class StoreAPIHandler(BaseHTTPRequestHandler):
             for order in orders:
                 order['id'] = str(order['_id'])
                 order['itemCount'] = len(order['items'])
+                # Convert datetime to ISO format string
+                if 'date' in order and order['date']:
+                    order['date'] = order['date'].isoformat()
                 del order['_id']
                 del order['customerId']
             
@@ -638,6 +641,10 @@ class StoreAPIHandler(BaseHTTPRequestHandler):
                 
                 customer = users_collection.find_one({'_id': ObjectId(order['customerId'])})
                 order['customerName'] = f"{customer['firstName']} {customer['lastName']}" if customer else 'Unknown'
+                
+                # Convert datetime to ISO format string
+                if 'date' in order and order['date']:
+                    order['date'] = order['date'].isoformat()
                 
                 del order['_id']
                 del order['customerId']
